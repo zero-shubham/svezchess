@@ -30,13 +30,14 @@
 	export let color: 'light' | 'dark';
 	export let piece: string = '';
 	export let highlight: boolean = false;
+	export let check: boolean = false;
 	export let onclick: () => void = () => {};
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
- <!-- https://colorhunt.co/palette/ebf4dd90ab8b5a78633b4953 -->
-<div class="square {color}" {onclick}>
+<!-- https://colorhunt.co/palette/ebf4dd90ab8b5a78633b4953 -->
+<div class="square {color}" class:check {onclick}>
 	{#if pieces[piece]}
 		<img src={pieces[piece]} alt={piece} class="piece" />
 	{/if}
@@ -82,6 +83,10 @@
 
 	.dark {
 		background-color: #90ab8b;
+	}
+
+	.check {
+		background-color: #aa2b1d !important;
 	}
 
 	.piece {

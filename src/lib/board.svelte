@@ -1,5 +1,7 @@
 <script lang="ts">
 	import Cell from './cell.svelte';
+	import moveSelfSound from '$lib/assets/move-self.mp3';
+	import captureSound from '$lib/assets/capture.mp3';
 
 	let position = $state([
 		['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
@@ -25,6 +27,10 @@
 
 	let selected = $state<{ r: number; c: number } | null>(null);
 	let turn = $state<'white' | 'black'>('white');
+	let checkPosition = $state<{ r: number; c: number } | null>(null);
+
+	let whiteKingPos = $state<{ r: number; c: number }>({ r: 7, c: 4 });
+	let blackKingPos = $state<{ r: number; c: number }>({ r: 0, c: 4 });
 
 	function getPieceColor(piece: string): 'white' | 'black' | null {
 		if (!piece) return null;
@@ -123,6 +129,71 @@
 		return moves;
 	}
 
+	function playSound(type: 'move' | 'capture') {
+		if (typeof window === 'undefined') return;
+
+		const audio = new Audio(type === 'move' ? moveSelfSound : captureSound);
+		audio.play().catch((e) => console.error('Error playing sound:', e));
+	}
+
+	function isKingInCheck(
+		color: 'white' | 'black',
+		board: string[][],
+		kingPosOverride?: { r: number; c: number }
+	): boolean {
+		let kingPos = kingPosOverride;
+
+		if (!kingPos) {
+			// If we are checking the main board, use the cached state
+			if (board === position) {
+				kingPos = color === 'white' ? whiteKingPos : blackKingPos;
+			} else {
+				// If board is simulated and no override provided, find king
+				const kingPiece = color === 'white' ? 'K' : 'k';
+				kingPos = { r: -1, c: -1 };
+				for (let i = 0; i < 8; i++) {
+					for (let j = 0; j < 8; j++) {
+						if (board[i][j] === kingPiece) {
+							kingPos = { r: i, c: j };
+							break;
+						}
+					}
+					if (kingPos.r !== -1) break;
+				}
+				// If king not found (captured?), return false or handle error.
+				// In standard chess king cannot be captured, but for safety:
+				if (kingPos.r === -1) return false;
+			}
+		}
+
+		const opponentColor = color === 'white' ? 'black' : 'white';
+
+		// Check if any opponent piece attacks kingPos
+		for (let i = 0; i < 8; i++) {
+			for (let j = 0; j < 8; j++) {
+				const piece = board[i][j];
+				if (piece && getPieceColor(piece) === opponentColor) {
+					const moves = getMoves(i, j, piece, board);
+					if (moves.some((m) => m.r === kingPos!.r && m.c === kingPos!.c)) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	function handleCheckPosition() {
+		const opponentColor = turn === 'white' ? 'black' : 'white';
+
+		if (isKingInCheck(opponentColor, position)) {
+			checkPosition = opponentColor === 'white' ? whiteKingPos : blackKingPos;
+		} else {
+			checkPosition = null;
+		}
+	}
+
 	function handleClick(r: number, c: number) {
 		const piece = position[r][c];
 
@@ -133,8 +204,22 @@
 
 		if (selected && highlight[r][c]) {
 			// Move
-			position[r][c] = position[selected.r][selected.c];
+			const isCapture = position[r][c] !== '';
+			const movingPiece = position[selected.r][selected.c];
+			playSound(isCapture ? 'capture' : 'move');
+
+			// Update King Position if King moved
+			if (movingPiece === 'K') {
+				whiteKingPos = { r, c };
+			} else if (movingPiece === 'k') {
+				blackKingPos = { r, c };
+			}
+
+			position[r][c] = movingPiece;
 			position[selected.r][selected.c] = '';
+
+			handleCheckPosition();
+
 			selected = null;
 			highlight = newHighlight;
 			turn = turn === 'white' ? 'black' : 'white';
@@ -152,8 +237,25 @@
 
 			selected = { r, c };
 			const moves = getMoves(r, c, piece, position);
+
+			// Filter moves that leave/put king in check
 			moves.forEach((m) => {
-				newHighlight[m.r][m.c] = true;
+				// Simulate move
+				const tempBoard = position.map((row) => [...row]);
+				tempBoard[m.r][m.c] = piece;
+				tempBoard[r][c] = '';
+
+				// Determine where the king is on the temp board
+				let tempKingPos: { r: number; c: number };
+				if (piece.toLowerCase() === 'k') {
+					tempKingPos = { r: m.r, c: m.c };
+				} else {
+					tempKingPos = turn === 'white' ? whiteKingPos : blackKingPos;
+				}
+
+				if (!isKingInCheck(turn, tempBoard, tempKingPos)) {
+					newHighlight[m.r][m.c] = true;
+				}
 			});
 			highlight = newHighlight;
 		} else {
@@ -174,6 +276,7 @@
 				color={(r + f) % 2 === 0 ? 'light' : 'dark'}
 				piece={position[r][f]}
 				highlight={highlight[r][f]}
+				check={checkPosition?.r === r && checkPosition?.c === f}
 				onclick={() => handleClick(r, f)}
 			/>
 		{/each}
