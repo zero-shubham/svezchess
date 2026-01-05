@@ -1,7 +1,12 @@
 <script lang="ts">
 	import Cell from './cell.svelte';
+	import GameOver from './gameover.svelte';
 	import moveSelfSound from '$lib/assets/move-self.mp3';
 	import captureSound from '$lib/assets/capture.mp3';
+
+	let initRotate: boolean = $props()
+
+	let rotate: boolean = $state(initRotate)
 
 	let position = $state([
 		['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
@@ -28,6 +33,8 @@
 	let selected = $state<{ r: number; c: number } | null>(null);
 	let turn = $state<'white' | 'black'>('white');
 	let checkPosition = $state<{ r: number; c: number } | null>(null);
+	let checkColor = $state<'white' | 'black' | null>(null);
+	let winner = $state<'white' | 'black' | 'draw' | null>(null);
 
 	let whiteKingPos = $state<{ r: number; c: number }>({ r: 7, c: 4 });
 	let blackKingPos = $state<{ r: number; c: number }>({ r: 0, c: 4 });
@@ -184,13 +191,61 @@
 		return false;
 	}
 
+	function checkGameOver() {
+		const currentPlayer = turn;
+		let hasValidMoves = false;
+
+		// Iterate through all pieces of the current player
+		for (let r = 0; r < 8; r++) {
+			for (let c = 0; c < 8; c++) {
+				const piece = position[r][c];
+				if (piece && getPieceColor(piece) === currentPlayer) {
+					const moves = getMoves(r, c, piece, position);
+
+					// Check if any move is valid (doesn't result in check)
+					for (const m of moves) {
+						const tempBoard = position.map((row) => [...row]);
+						tempBoard[m.r][m.c] = piece;
+						tempBoard[r][c] = '';
+
+						let tempKingPos: { r: number; c: number };
+						if (piece.toLowerCase() === 'k') {
+							tempKingPos = { r: m.r, c: m.c };
+						} else {
+							tempKingPos = currentPlayer === 'white' ? whiteKingPos : blackKingPos;
+						}
+
+						if (!isKingInCheck(currentPlayer, tempBoard, tempKingPos)) {
+							hasValidMoves = true;
+							break;
+						}
+					}
+					if (hasValidMoves) break;
+				}
+			}
+			if (hasValidMoves) break;
+		}
+
+		if (!hasValidMoves) {
+			if (checkColor === currentPlayer) {
+				// Checkmate
+				winner = currentPlayer === 'white' ? 'black' : 'white';
+			} else {
+				// Stalemate
+				winner = 'draw';
+			}
+		}
+	}
+
 	function handleCheckPosition() {
 		const opponentColor = turn === 'white' ? 'black' : 'white';
 
 		if (isKingInCheck(opponentColor, position)) {
 			checkPosition = opponentColor === 'white' ? whiteKingPos : blackKingPos;
+			checkColor = opponentColor;
 		} else {
 			checkPosition = null;
+			checkColor = null;
 		}
 	}
 
@@ -220,9 +275,13 @@
 
 			handleCheckPosition();
 
+			// Switch turn first, then check for game over for the *new* current player
+			turn = turn === 'white' ? 'black' : 'white';
+
+			checkGameOver();
+
 			selected = null;
 			highlight = newHighlight;
-			turn = turn === 'white' ? 'black' : 'white';
 			return;
 		}
 
@@ -270,6 +329,7 @@
 </script>
 
 <div class="board">
+	<GameOver {winner} />
 	{#each ranks as rank, r}
 		{#each files as file, f}
 			<Cell
@@ -293,5 +353,6 @@
 		aspect-ratio: 1 / 1;
 		border: 5px solid #333;
 		user-select: none;
+		position: relative;
 	}
 </style>

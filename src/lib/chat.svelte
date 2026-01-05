@@ -83,7 +83,7 @@
 	}
 
 	.chat-window.minimized {
-		width: 200px;
+		/* width: 200px; */
 	}
 
 	.header {
@@ -211,5 +211,23 @@
 
 	.input-area button:hover {
 		opacity: 0.9;
+	}
+	@media (max-width: 600px) {
+		.chat-window {
+			width: 90%;
+			right: auto;
+			left: 50%;
+			transform: translateX(-50%);
+			max-height: 50%;
+			display: flex;
+			flex-direction: column;
+      min-height: fit-content;
+		}
+
+		.content {
+			flex: 1;
+			height: auto;
+			min-height: 0;
+		}
 	}
 </style>
