@@ -39,6 +39,7 @@
 
 	let whiteKingPos = $state<{ r: number; c: number }>({ r: 7, c: 4 });
 	let blackKingPos = $state<{ r: number; c: number }>({ r: 0, c: 4 });
+	let enPassantTarget = $state<{ r: number; c: number } | null>(null);
 
 	let hasMoved = $state({
 		whiteKing: false,
@@ -169,6 +170,17 @@
 			if (board[r + dir]?.[c + 1] && getPieceColor(board[r + dir][c + 1]) !== color) {
 				moves.push({ r: r + dir, c: c + 1 });
 			}
+
+			// En Passant
+			if (enPassantTarget) {
+				if (
+					enPassantTarget.r === r + dir &&
+					Math.abs(enPassantTarget.c - c) === 1 &&
+					board === position
+				) {
+					moves.push({ r: enPassantTarget.r, c: enPassantTarget.c });
+				}
+			}
 		} else if (type === 'n') {
 			knights.forEach(([dr, dc]) => addIfValid(r + dr, c + dc));
 		} else if (type === 'k') {
@@ -277,6 +289,14 @@
 						tempBoard[m.r][m.c] = piece;
 						tempBoard[r][c] = '';
 
+						// Handle En Passant in simulation
+						if (piece.toLowerCase() === 'p' && enPassantTarget) {
+							if (m.r === enPassantTarget.r && m.c === enPassantTarget.c) {
+								const capturedPawnRow = turn === 'white' ? m.r + 1 : m.r - 1;
+								tempBoard[capturedPawnRow][m.c] = '';
+							}
+						}
+
 						let tempKingPos: { r: number; c: number };
 						if (piece.toLowerCase() === 'k') {
 							tempKingPos = { r: m.r, c: m.c };
@@ -332,6 +352,25 @@
 			const movingPiece = position[selected.r][selected.c];
 			playSound(isCapture ? 'capture' : 'move');
 
+			let moveEnPassantTarget = null;
+
+			// Handle En Passant Capture
+			if (
+				movingPiece.toLowerCase() === 'p' &&
+				enPassantTarget &&
+				r === enPassantTarget.r &&
+				c === enPassantTarget.c
+			) {
+				const capturedPawnRow = turn === 'white' ? r + 1 : r - 1;
+				position[capturedPawnRow][c] = '';
+				playSound('capture');
+			}
+
+			// Handle Double Pawn Push (Set En Passant Target)
+			if (movingPiece.toLowerCase() === 'p' && Math.abs(r - selected.r) === 2) {
+				moveEnPassantTarget = { r: (r + selected.r) / 2, c };
+			}
+
 			// Handle Castling Move
 			if (movingPiece.toLowerCase() === 'k' && Math.abs(c - selected.c) === 2) {
 				const isKingside = c > selected.c;
@@ -360,6 +399,7 @@
 
 			position[r][c] = movingPiece;
 			position[selected.r][selected.c] = '';
+			enPassantTarget = moveEnPassantTarget;
 
 			handleCheckPosition();
 
@@ -391,6 +431,14 @@
 				const tempBoard = position.map((row) => [...row]);
 				tempBoard[m.r][m.c] = piece;
 				tempBoard[r][c] = '';
+
+				// Handle En Passant in simulation
+				if (piece.toLowerCase() === 'p' && enPassantTarget) {
+					if (m.r === enPassantTarget.r && m.c === enPassantTarget.c) {
+						const capturedPawnRow = turn === 'white' ? m.r + 1 : m.r - 1;
+						tempBoard[capturedPawnRow][m.c] = '';
+					}
+				}
 
 				// Determine where the king is on the temp board
 				let tempKingPos: { r: number; c: number };
