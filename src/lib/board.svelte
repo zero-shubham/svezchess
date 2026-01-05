@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Cell from './cell.svelte';
 	import GameOver from './gameover.svelte';
+	import PawnPromotion from './pawnprom.svelte';
 	import moveSelfSound from '$lib/assets/move-self.mp3';
 	import captureSound from '$lib/assets/capture.mp3';
 
@@ -40,6 +41,10 @@
 	let whiteKingPos = $state<{ r: number; c: number }>({ r: 7, c: 4 });
 	let blackKingPos = $state<{ r: number; c: number }>({ r: 0, c: 4 });
 	let enPassantTarget = $state<{ r: number; c: number } | null>(null);
+
+	let promotionPending = $state(false);
+	let promotionSquare = $state<{ r: number; c: number } | null>(null);
+	let promotionColor = $state<'white' | 'black'>('white');
 
 	let hasMoved = $state({
 		whiteKing: false,
@@ -338,6 +343,24 @@
 		}
 	}
 
+	function handlePromotion(pieceCode: string) {
+		if (promotionSquare) {
+			position[promotionSquare.r][promotionSquare.c] = pieceCode;
+			playSound('move');
+
+			handleCheckPosition();
+
+			// Switch turn first, then check for game over for the *new* current player
+			turn = turn === 'white' ? 'black' : 'white';
+
+			checkGameOver();
+		}
+
+		// Reset Promotion State
+		promotionPending = false;
+		promotionSquare = null;
+	}
+
 	function handleClick(r: number, c: number) {
 		const piece = position[r][c];
 
@@ -400,6 +423,24 @@
 			position[r][c] = movingPiece;
 			position[selected.r][selected.c] = '';
 			enPassantTarget = moveEnPassantTarget;
+
+			// Handle Pawn Promotion
+			if (movingPiece === 'P' && r === 0) {
+				promotionPending = true;
+				promotionSquare = { r, c };
+				promotionColor = 'white';
+				selected = null;
+				highlight = newHighlight;
+				return;
+			}
+			if (movingPiece === 'p' && r === 7) {
+				promotionPending = true;
+				promotionSquare = { r, c };
+				promotionColor = 'black';
+				selected = null;
+				highlight = newHighlight;
+				return;
+			}
 
 			handleCheckPosition();
 
@@ -466,6 +507,9 @@
 
 <div class="board">
 	<GameOver {winner} />
+	{#if promotionPending}
+		<PawnPromotion color={promotionColor} onSelect={handlePromotion} />
+	{/if}
 	{#each displayRows as r}
 		{#each displayCols as c}
 			<Cell
