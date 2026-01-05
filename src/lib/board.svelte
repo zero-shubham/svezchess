@@ -40,12 +40,75 @@
 	let whiteKingPos = $state<{ r: number; c: number }>({ r: 7, c: 4 });
 	let blackKingPos = $state<{ r: number; c: number }>({ r: 0, c: 4 });
 
+	let hasMoved = $state({
+		whiteKing: false,
+		blackKing: false,
+		whiteRookLeft: false,
+		whiteRookRight: false,
+		blackRookLeft: false,
+		blackRookRight: false
+	});
+
 	function getPieceColor(piece: string): 'white' | 'black' | null {
 		if (!piece) return null;
 		return piece === piece.toUpperCase() ? 'white' : 'black';
 	}
 
-	function getMoves(r: number, c: number, piece: string, board: string[][]) {
+	function addCastlingMoves(
+		color: 'white' | 'black',
+		board: string[][],
+		moves: { r: number; c: number }[]
+	) {
+		const isWhite = color === 'white';
+		const row = isWhite ? 7 : 0;
+		const kingMoved = isWhite ? hasMoved.whiteKing : hasMoved.blackKing;
+		const rookRightMoved = isWhite ? hasMoved.whiteRookRight : hasMoved.blackRookRight;
+		const rookLeftMoved = isWhite ? hasMoved.whiteRookLeft : hasMoved.blackRookLeft;
+		const rookChar = isWhite ? 'R' : 'r';
+
+		if (kingMoved) return;
+
+		// Kingside
+		if (
+			!rookRightMoved &&
+			board[row][5] === '' &&
+			board[row][6] === '' &&
+			board[row][7] === rookChar
+		) {
+			if (
+				!isKingInCheck(color, board, { r: row, c: 4 }) &&
+				!isKingInCheck(color, board, { r: row, c: 5 }) &&
+				!isKingInCheck(color, board, { r: row, c: 6 })
+			) {
+				moves.push({ r: row, c: 6 });
+			}
+		}
+
+		// Queenside
+		if (
+			!rookLeftMoved &&
+			board[row][1] === '' &&
+			board[row][2] === '' &&
+			board[row][3] === '' &&
+			board[row][0] === rookChar
+		) {
+			if (
+				!isKingInCheck(color, board, { r: row, c: 4 }) &&
+				!isKingInCheck(color, board, { r: row, c: 3 }) &&
+				!isKingInCheck(color, board, { r: row, c: 2 })
+			) {
+				moves.push({ r: row, c: 2 });
+			}
+		}
+	}
+
+	function getMoves(
+		r: number,
+		c: number,
+		piece: string,
+		board: string[][],
+		includeCastling = true
+	) {
 		const moves: { r: number; c: number }[] = [];
 		const color = getPieceColor(piece);
 		if (!color) return moves;
@@ -110,6 +173,10 @@
 			knights.forEach(([dr, dc]) => addIfValid(r + dr, c + dc));
 		} else if (type === 'k') {
 			[...straights, ...diagonals].forEach(([dr, dc]) => addIfValid(r + dr, c + dc));
+
+			if (includeCastling && board === position) {
+				addCastlingMoves(color, board, moves);
+			}
 		} else {
 			// Sliding pieces: b, r, q
 			const dirs = [];
@@ -182,7 +249,7 @@
 			for (let j = 0; j < 8; j++) {
 				const piece = board[i][j];
 				if (piece && getPieceColor(piece) === opponentColor) {
-					const moves = getMoves(i, j, piece, board);
+					const moves = getMoves(i, j, piece, board, false);
 					if (moves.some((m) => m.r === kingPos!.r && m.c === kingPos!.c)) {
 						return true;
 					}
@@ -265,11 +332,30 @@
 			const movingPiece = position[selected.r][selected.c];
 			playSound(isCapture ? 'capture' : 'move');
 
-			// Update King Position if King moved
+			// Handle Castling Move
+			if (movingPiece.toLowerCase() === 'k' && Math.abs(c - selected.c) === 2) {
+				const isKingside = c > selected.c;
+				const rookCol = isKingside ? 7 : 0;
+				const rookTargetCol = isKingside ? 5 : 3;
+				// Move Rook
+				const rookPiece = position[r][rookCol];
+				position[r][rookTargetCol] = rookPiece;
+				position[r][rookCol] = '';
+			}
+
+			// Update King Position and hasMoved flags
 			if (movingPiece === 'K') {
 				whiteKingPos = { r, c };
+				hasMoved.whiteKing = true;
 			} else if (movingPiece === 'k') {
 				blackKingPos = { r, c };
+				hasMoved.blackKing = true;
+			} else if (movingPiece === 'R') {
+				if (selected.r === 7 && selected.c === 0) hasMoved.whiteRookLeft = true;
+				if (selected.r === 7 && selected.c === 7) hasMoved.whiteRookRight = true;
+			} else if (movingPiece === 'r') {
+				if (selected.r === 0 && selected.c === 0) hasMoved.blackRookLeft = true;
+				if (selected.r === 0 && selected.c === 7) hasMoved.blackRookRight = true;
 			}
 
 			position[r][c] = movingPiece;
