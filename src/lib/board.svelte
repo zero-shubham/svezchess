@@ -4,9 +4,10 @@
 	import moveSelfSound from '$lib/assets/move-self.mp3';
 	import captureSound from '$lib/assets/capture.mp3';
 
-	let initRotate: boolean = $props()
+	let { flip = false } = $props();
 
-	let rotate: boolean = $state(initRotate)
+	let displayRows = $derived(flip ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7]);
+	let displayCols = [0, 1, 2, 3, 4, 5, 6, 7];
 
 	let position = $state([
 		['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
@@ -90,6 +91,7 @@
 			const startRow = color === 'white' ? 6 : 1;
 
 			// Forward 1
+
 			if (board[r + dir]?.[c] === '') {
 				moves.push({ r: r + dir, c: c });
 				// Forward 2
@@ -330,14 +332,14 @@
 
 <div class="board">
 	<GameOver {winner} />
-	{#each ranks as rank, r}
-		{#each files as file, f}
+	{#each displayRows as r}
+		{#each displayCols as c}
 			<Cell
-				color={(r + f) % 2 === 0 ? 'light' : 'dark'}
-				piece={position[r][f]}
-				highlight={highlight[r][f]}
-				check={checkPosition?.r === r && checkPosition?.c === f}
-				onclick={() => handleClick(r, f)}
+				color={(r + c) % 2 === 0 ? 'light' : 'dark'}
+				piece={position[r][c]}
+				highlight={highlight[r][c]}
+				check={checkPosition?.r === r && checkPosition?.c === c}
+				onclick={() => handleClick(r, c)}
 			/>
 		{/each}
 	{/each}

@@ -50,7 +50,7 @@
 
 	.sub-text {
 		font-size: 0.8rem;
-		color: #5A7863;
+		color: #5a7863;
 		margin-top: 10px;
 		text-shadow: 1px 1px 0px #000;
 	}

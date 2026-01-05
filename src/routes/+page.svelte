@@ -5,7 +5,7 @@
 
 <h1>Welcome to SvelteKit</h1>
 <div class="container">
-	<Board />
+	<Board flip={false}/>
 	<Chat />
 </div>
 
