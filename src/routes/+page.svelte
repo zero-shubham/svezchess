@@ -3,7 +3,6 @@
 	import Chat from '$lib/chat.svelte';
 </script>
 
-<h1>Welcome to SvelteKit</h1>
 <div class="container">
 	<Board flip={false}/>
 	<Chat />

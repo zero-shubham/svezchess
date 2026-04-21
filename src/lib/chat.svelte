@@ -6,15 +6,25 @@
 		message: string;
 	}
 
-	export let messages: Message[] = [
+	let { messages = [
 		{ actor: 'instructor', message: 'Welcome to the chess lesson!' },
 		{ actor: 'student', message: 'Hello, I am ready to learn.' }
-	];
+	] }: { messages?: Message[] } = $props();
 
 	let minimized = false;
 	let newMessage = '';
+	let isSmallScreen = $state(false);
+
+	$effect(() => {
+		const mql = window.matchMedia('(max-width: 800px)');
+		isSmallScreen = mql.matches;
+		const handler = (e: MediaQueryListEvent) => (isSmallScreen = e.matches);
+		mql.addEventListener('change', handler);
+		return () => mql.removeEventListener('change', handler);
+	});
 
 	function toggle() {
+		if (!isSmallScreen) return;
 		minimized = !minimized;
 	}
 
@@ -35,17 +45,17 @@
 <div class="chat-window" class:minimized>
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
-	<div class="header" on:click={toggle}>
+	<div class="header" onclick={toggle}>
 		<span class="title">Chat</span>
 		<button class="toggle-btn">
 			{minimized ? '▲' : '▼'}
 		</button>
 	</div>
 
-	{#if !minimized}
+	{#if !minimized || !isSmallScreen}
 		<div class="content">
 			<div class="messages">
-				{#each messages as msg}
+				{#each messages as msg, i (i)}
 					<div class="message-row {msg.actor}">
 						<div class="bubble">
 							<span class="actor-label">{msg.actor}</span>
@@ -59,9 +69,9 @@
 					type="text"
 					placeholder="Type your queries..."
 					bind:value={newMessage}
-					on:keydown={handleKeydown}
+					onkeydown={handleKeydown}
 				/>
-				<button on:click={sendMessage}>Send</button>
+				<button onclick={sendMessage}>Send</button>
 			</div>
 		</div>
 	{/if}
@@ -71,10 +81,10 @@
 	.chat-window {
 		position: fixed;
 		bottom: 0;
-		right: 20px;
-		width: 300px;
+		right: 0px;
+		width: 400px;
+		height: 100%;
 		background-color: white;
-		border-radius: 8px 8px 0 0;
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 		border: 1px solid #ccc;
 		font-family: sans-serif;
@@ -90,7 +100,6 @@
 		background-color: #3b4953;
 		color: white;
 		padding: 10px 15px;
-		border-radius: 8px 8px 0 0;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
@@ -118,8 +127,18 @@
 		padding: 0;
 	}
 
+	@media (min-width: 801px) {
+		.toggle-btn {
+			display: none;
+		}
+
+		.header {
+			cursor: default;
+		}
+	}
+
 	.content {
-		height: 350px;
+		height: 95%;
 		display: flex;
 		flex-direction: column;
 		background-color: #f9f9f9;
@@ -212,8 +231,10 @@
 	.input-area button:hover {
 		opacity: 0.9;
 	}
-	@media (max-width: 600px) {
+	@media (max-width: 800px) {
 		.chat-window {
+			position: fixed;
+			bottom: 0;
 			width: 90%;
 			right: auto;
 			left: 50%;
@@ -221,7 +242,12 @@
 			max-height: 50%;
 			display: flex;
 			flex-direction: column;
-      min-height: fit-content;
+			min-height: fit-content;
+			border-radius: 8px 8px 0 0;
+		}
+
+		.header {
+			border-radius: 8px 8px 0 0;
 		}
 
 		.content {
