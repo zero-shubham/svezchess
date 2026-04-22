@@ -6,10 +6,7 @@
 		message: string;
 	}
 
-	let { messages = [
-		{ actor: 'instructor', message: 'Welcome to the chess lesson!' },
-		{ actor: 'student', message: 'Hello, I am ready to learn.' }
-	] }: { messages?: Message[] } = $props();
+	let { messages = [] }: { messages?: Message[] } = $props();
 
 	let minimized = false;
 	let newMessage = '';
@@ -55,6 +52,9 @@
 	{#if !minimized || !isSmallScreen}
 		<div class="content">
 			<div class="messages">
+				{#if messages.length === 0}
+					<div class="empty-state">Wait for your instructor to begin..</div>
+				{/if}
 				{#each messages as msg, i (i)}
 					<div class="message-row {msg.actor}">
 						<div class="bubble">
@@ -70,8 +70,9 @@
 					placeholder="Type your queries..."
 					bind:value={newMessage}
 					onkeydown={handleKeydown}
+					disabled={messages.length === 0}
 				/>
-				<button onclick={sendMessage}>Send</button>
+				<button disabled={messages.length === 0} onclick={sendMessage}>Send</button>
 			</div>
 		</div>
 	{/if}
@@ -153,6 +154,13 @@
 		gap: 10px;
 	}
 
+	.empty-state {
+		text-align: center;
+		color: #999;
+		font-style: italic;
+		margin: auto;
+	}
+
 	.message-row {
 		display: flex;
 	}
@@ -230,6 +238,11 @@
 
 	.input-area button:hover {
 		opacity: 0.9;
+	}
+
+	.input-area button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 	@media (max-width: 800px) {
 		.chat-window {

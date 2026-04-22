@@ -4,13 +4,56 @@
 	import PawnPromotion from './pawnprom.svelte';
 	import moveSelfSound from '$lib/assets/move-self.mp3';
 	import captureSound from '$lib/assets/capture.mp3';
+	import type { Piece, InstructorMove } from '$lib/types';
 
-	let { flip = false } = $props();
+	let { flip = false, instructorMove, handleInvalidInstructorMove }: { flip?: boolean; instructorMove?: InstructorMove | null; handleInvalidInstructorMove: () => void } = $props();
+
+	$effect(() => {
+		if (!instructorMove) return;
+		const pieceColor = instructorMove.piece === instructorMove.piece.toUpperCase() ? 'white' : 'black';
+		if (pieceColor !== turn) return;
+
+		const [fromR, fromC] = instructorMove.currentPosition;
+		const [toR, toC] = instructorMove.movePosition;
+
+		handleClick(fromR, fromC);
+
+		// Validate move before executing
+		const piece = position[fromR][fromC];
+		const moves = getMoves(fromR, fromC, piece, position);
+		const isValidMove = moves.some((m) => {
+			const tempBoard = position.map((row) => [...row]);
+			tempBoard[m.r][m.c] = piece;
+			tempBoard[fromR][fromC] = '';
+
+			if (piece.toLowerCase() === 'p' && enPassantTarget) {
+				if (m.r === enPassantTarget.r && m.c === enPassantTarget.c) {
+					const capturedPawnRow = turn === 'white' ? m.r + 1 : m.r - 1;
+					tempBoard[capturedPawnRow][m.c] = '';
+				}
+			}
+
+			let tempKingPos: { r: number; c: number };
+			if (piece.toLowerCase() === 'k') {
+				tempKingPos = { r: m.r, c: m.c };
+			} else {
+				tempKingPos = turn === 'white' ? whiteKingPos : blackKingPos;
+			}
+
+			return !isKingInCheck(turn, tempBoard, tempKingPos) && m.r === toR && m.c === toC;
+		});
+
+		if (isValidMove) {
+			queueMicrotask(() => handleClick(toR, toC));
+		} else {
+			handleInvalidInstructorMove();
+		}
+	});
 
 	let displayRows = $derived(flip ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7]);
 	let displayCols = [0, 1, 2, 3, 4, 5, 6, 7];
 
-	let position = $state([
+	let position = $state<(Piece | '')[][]>([
 		['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
 		['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
 		['', '', '', '', '', '', '', ''],
@@ -343,7 +386,7 @@
 		}
 	}
 
-	function handlePromotion(pieceCode: string) {
+	function handlePromotion(pieceCode: Piece) {
 		if (promotionSquare) {
 			position[promotionSquare.r][promotionSquare.c] = pieceCode;
 			playSound('move');
@@ -499,10 +542,6 @@
 			highlight = newHighlight;
 		}
 	}
-
-	let files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-
-	let ranks = [8, 7, 6, 5, 4, 3, 2, 1];
 </script>
 
 <div class="board">
@@ -510,8 +549,8 @@
 	{#if promotionPending}
 		<PawnPromotion color={promotionColor} onSelect={handlePromotion} />
 	{/if}
-	{#each displayRows as r}
-		{#each displayCols as c}
+	{#each displayRows as r, ri (ri)}
+		{#each displayCols as c, ci (ci)}
 			<Cell
 				color={(r + c) % 2 === 0 ? 'light' : 'dark'}
 				piece={position[r][c]}

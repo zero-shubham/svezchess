@@ -8,10 +8,12 @@
 	import rookB from '$lib/assets/rook-b.svg';
 	import rookW from '$lib/assets/rook-w.svg';
 
+	import type { Piece } from '$lib/types';
+
 	// Receive props
 	let { color = 'white', onSelect } = $props<{
 		color: 'white' | 'black';
-		onSelect: (piece: string) => void;
+		onSelect: (piece: Piece) => void;
 	}>();
 
 	const options = [
@@ -25,7 +27,7 @@
 		return color === 'white' ? option.white : option.black;
 	}
 
-	function getPieceCode(type: string) {
+	function getPieceCode(type: Piece) {
 		return color === 'white' ? type.toUpperCase() : type;
 	}
 </script>
@@ -34,10 +36,10 @@
 	<div class="promotion-container">
 		<p class="title">Promote Pawn</p>
 		<div class="options">
-			{#each options as option}
+			{#each options as option, i (i)}
 				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div class="option" onclick={() => onSelect(getPieceCode(option.type))}>
+				<div class="option" onclick={() => onSelect(getPieceCode(option.type as Piece))}>
 					<img src={getIcon(option)} alt={option.type} />
 				</div>
 			{/each}
