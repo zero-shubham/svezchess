@@ -5,6 +5,7 @@
 	import moveSelfSound from '$lib/assets/move-self.mp3';
 	import captureSound from '$lib/assets/capture.mp3';
 	import type { Piece, InstructorMove } from '$lib/types';
+	import { loadFEN } from '$lib/fen';
 
 	let { flip = false, instructorMove, handleInvalidInstructorMove }: { flip?: boolean; instructorMove?: InstructorMove | null; handleInvalidInstructorMove: () => void } = $props();
 
