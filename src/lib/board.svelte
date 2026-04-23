@@ -7,11 +7,51 @@
 	import type { Piece, InstructorMove } from '$lib/types';
 	import { loadFEN } from '$lib/fen';
 
-	let { flip = false, instructorMove, handleInvalidInstructorMove }: { flip?: boolean; instructorMove?: InstructorMove | null; handleInvalidInstructorMove: () => void } = $props();
+	let {
+		flip = false,
+		instructorMove,
+		handleInvalidInstructorMove,
+		fenState = $bindable<string | null>(null)
+	}: {
+		flip?: boolean;
+		instructorMove?: InstructorMove | null;
+		handleInvalidInstructorMove: () => void;
+		fenState?: string | null;
+	} = $props();
+
+	let loaded = $state(false);
+	$effect(() => {
+		if (loaded || !fenState) return;
+
+		const { board, enPassantTarget: epTarget, hasMoved: moved } = loadFEN(fenState);
+		position = board;
+		enPassantTarget = epTarget;
+		hasMoved = moved;
+
+		for (let r = 0; r < 8; r++) {
+			for (let c = 0; c < 8; c++) {
+				if (position[r][c] === 'K') whiteKingPos = { r, c };
+				if (position[r][c] === 'k') blackKingPos = { r, c };
+			}
+		}
+
+		selected = null;
+		highlight = Array(8)
+			.fill(null)
+			.map(() => Array(8).fill(false));
+		winner = null;
+		checkPosition = null;
+		checkColor = null;
+		promotionPending = false;
+		promotionSquare = null;
+		loaded = true;
+		handleCheckPosition();
+	});
 
 	$effect(() => {
 		if (!instructorMove) return;
-		const pieceColor = instructorMove.piece === instructorMove.piece.toUpperCase() ? 'white' : 'black';
+		const pieceColor =
+			instructorMove.piece === instructorMove.piece.toUpperCase() ? 'white' : 'black';
 		if (pieceColor !== turn) return;
 
 		const [fromR, fromC] = instructorMove.currentPosition;
