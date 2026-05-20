@@ -5,21 +5,24 @@
 	import moveSelfSound from '$lib/assets/move-self.mp3';
 	import captureSound from '$lib/assets/capture.mp3';
 	import type { Piece, InstructorMove } from '$lib/types';
-	import { loadFEN } from '$lib/fen';
+	import { loadFEN, toFEN } from '$lib/fen';
 
 	let {
 		flip = false,
 		instructorMove,
 		handleInvalidInstructorMove,
+		onstudentmove,
 		fenState = $bindable<string | null>(null)
 	}: {
 		flip?: boolean;
 		instructorMove?: InstructorMove | null;
-		handleInvalidInstructorMove: () => void;
+		handleInvalidInstructorMove: (reason: string) => void;
+		onstudentmove?: (move: { from: { r: number; c: number }; to: { r: number; c: number }; fen: string }) => void;
 		fenState?: string | null;
 	} = $props();
 
 	let loaded = $state(false);
+	let isInstructorDriving = $state(false);
 	$effect(() => {
 		if (loaded || !fenState) return;
 
@@ -50,17 +53,24 @@
 
 	$effect(() => {
 		if (!instructorMove) return;
-		const pieceColor =
-			instructorMove.piece === instructorMove.piece.toUpperCase() ? 'white' : 'black';
-		if (pieceColor !== turn) return;
 
 		const [fromR, fromC] = instructorMove.currentPosition;
 		const [toR, toC] = instructorMove.movePosition;
 
+		const piece = position[fromR][fromC];
+		if (!piece) {
+			handleInvalidInstructorMove('no piece at source position');
+			return;
+		}
+		const pieceColor = piece === piece.toUpperCase() ? 'white' : 'black';
+		if (pieceColor !== turn) {
+			handleInvalidInstructorMove('piece color does not match current turn');
+			return;
+		}
+
+		isInstructorDriving = true;
 		handleClick(fromR, fromC);
 
-		// Validate move before executing
-		const piece = position[fromR][fromC];
 		const moves = getMoves(fromR, fromC, piece, position);
 		const isValidMove = moves.some((m) => {
 			const tempBoard = position.map((row) => [...row]);
@@ -85,9 +95,13 @@
 		});
 
 		if (isValidMove) {
-			queueMicrotask(() => handleClick(toR, toC));
+			queueMicrotask(() => {
+				handleClick(toR, toC);
+				isInstructorDriving = false;
+			});
 		} else {
-			handleInvalidInstructorMove();
+			isInstructorDriving = false;
+			handleInvalidInstructorMove('move not allowed: illegal or leaves king in check');
 		}
 	});
 
@@ -125,6 +139,8 @@
 	let whiteKingPos = $state<{ r: number; c: number }>({ r: 7, c: 4 });
 	let blackKingPos = $state<{ r: number; c: number }>({ r: 0, c: 4 });
 	let enPassantTarget = $state<{ r: number; c: number } | null>(null);
+
+	let pendingStudentMove = $state<{ from: { r: number; c: number }; to: { r: number; c: number } } | null>(null);
 
 	let promotionPending = $state(false);
 	let promotionSquare = $state<{ r: number; c: number } | null>(null);
@@ -434,8 +450,13 @@
 
 			handleCheckPosition();
 
-			// Switch turn first, then check for game over for the *new* current player
 			turn = turn === 'white' ? 'black' : 'white';
+
+			if (pendingStudentMove) {
+				const fen = toFEN(position, turn, enPassantTarget, hasMoved);
+				onstudentmove?.({ ...pendingStudentMove, fen });
+				pendingStudentMove = null;
+			}
 
 			checkGameOver();
 		}
@@ -513,6 +534,7 @@
 				promotionPending = true;
 				promotionSquare = { r, c };
 				promotionColor = 'white';
+				pendingStudentMove = isInstructorDriving ? null : { from: { r: selected.r, c: selected.c }, to: { r, c } };
 				selected = null;
 				highlight = newHighlight;
 				return;
@@ -521,6 +543,7 @@
 				promotionPending = true;
 				promotionSquare = { r, c };
 				promotionColor = 'black';
+				pendingStudentMove = isInstructorDriving ? null : { from: { r: selected.r, c: selected.c }, to: { r, c } };
 				selected = null;
 				highlight = newHighlight;
 				return;
@@ -530,6 +553,12 @@
 
 			// Switch turn first, then check for game over for the *new* current player
 			turn = turn === 'white' ? 'black' : 'white';
+
+			if (!isInstructorDriving) {
+				const fen = toFEN(position, turn, enPassantTarget, hasMoved);
+				onstudentmove?.({ from: { r: selected.r, c: selected.c }, to: { r, c }, fen });
+			}
+			pendingStudentMove = null;
 
 			checkGameOver();
 

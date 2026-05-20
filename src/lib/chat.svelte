@@ -6,10 +6,10 @@
 		message: string;
 	}
 
-	let { messages = [] }: { messages?: Message[] } = $props();
+	let { messages = [], onsend }: { messages?: Message[]; onsend?: (text: string) => void } = $props();
 
-	let minimized = false;
-	let newMessage = '';
+	let minimized = $state(false);
+	let newMessage = $state('');
 	let isSmallScreen = $state(false);
 
 	$effect(() => {
@@ -27,7 +27,7 @@
 
 	function sendMessage() {
 		if (newMessage.trim()) {
-			messages = [...messages, { actor: 'student', message: newMessage }];
+			onsend?.(newMessage);
 			newMessage = '';
 		}
 	}
@@ -98,7 +98,7 @@
 	}
 
 	.header {
-		background-color: #3b4953;
+		background-color: var(--color-dark-accent);
 		color: white;
 		padding: 10px 15px;
 		display: flex;
@@ -189,7 +189,7 @@
 	}
 
 	.student .bubble {
-		background-color: #5a7863;
+		background-color: var(--color-success);
 		color: white;
 		border-bottom-right-radius: 2px;
 	}
@@ -224,12 +224,12 @@
 	}
 
 	.input-area input:focus {
-		border-color: #5a7863;
+		border-color: var(--color-success);
 	}
 
 	.input-area button {
 		padding: 8px 15px;
-		background-color: #4a6352;
+		background-color: var(--color-success);
 		color: white;
 		border: none;
 		border-radius: 4px;

@@ -99,7 +99,7 @@
 	.option:hover {
 		transform: scale(1.1);
 		background-color: rgba(0, 0, 0, 0.1);
-		border-color: #90ab8b;
+		border-color: var(--color-dark-square);
 	}
 
 	.option img {

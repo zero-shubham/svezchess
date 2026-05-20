@@ -1,16 +1,18 @@
 import type { Piece } from './types';
 
+export type HasMoved = {
+	whiteKing: boolean;
+	blackKing: boolean;
+	whiteRookLeft: boolean;
+	whiteRookRight: boolean;
+	blackRookLeft: boolean;
+	blackRookRight: boolean;
+};
+
 export function loadFEN(fen: string): {
 	board: (Piece | '')[][];
 	enPassantTarget: { r: number; c: number } | null;
-	hasMoved: {
-		whiteKing: boolean;
-		blackKing: boolean;
-		whiteRookLeft: boolean;
-		whiteRookRight: boolean;
-		blackRookLeft: boolean;
-		blackRookRight: boolean;
-	};
+	hasMoved: HasMoved;
 } {
 	const parts = fen.trim().split(/\s+/);
 	const [placement, , castling, enPassant] = parts;
@@ -46,4 +48,51 @@ export function loadFEN(fen: string): {
 	};
 
 	return { board: newBoard, enPassantTarget, hasMoved };
+}
+
+export function toFEN(
+	board: (Piece | '')[][],
+	turn: 'white' | 'black',
+	enPassantTarget: { r: number; c: number } | null,
+	hasMoved: HasMoved
+): string {
+	const placement = board
+		.map((row) => {
+			let str = '';
+			let empty = 0;
+			for (const cell of row) {
+				if (cell === '') {
+					empty++;
+				} else {
+					if (empty > 0) {
+						str += empty;
+						empty = 0;
+					}
+					str += cell;
+				}
+			}
+			if (empty > 0) str += empty;
+			return str;
+		})
+		.join('/');
+
+	let castling = '';
+	if (!hasMoved.whiteKing) {
+		if (!hasMoved.whiteRookRight) castling += 'K';
+		if (!hasMoved.whiteRookLeft) castling += 'Q';
+	}
+	if (!hasMoved.blackKing) {
+		if (!hasMoved.blackRookRight) castling += 'k';
+		if (!hasMoved.blackRookLeft) castling += 'q';
+	}
+	if (!castling) castling = '-';
+
+	let ep = '-';
+	if (enPassantTarget) {
+		const file = String.fromCharCode(97 + enPassantTarget.c);
+		const rank = 8 - enPassantTarget.r;
+		ep = file + rank;
+	}
+
+	return `${placement} ${turn[0]} ${castling} ${ep} 0 1`;
 }

@@ -1,5 +1,7 @@
 <script lang="ts">
+	import '../app.css';
 	import logo from '$lib/assets/logo.svg';
+	import Toast from '$lib/toast.svelte';
 	let { children } = $props();
 </script>
 
@@ -11,6 +13,8 @@
 		{@render children()}
 	</main>
 </div>
+
+<Toast />
 
 <style>
 	.logo {

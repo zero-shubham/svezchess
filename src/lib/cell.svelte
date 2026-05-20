@@ -74,7 +74,7 @@
 		width: 85%;
 		height: 85%;
 		background-color: transparent;
-		border: 5px solid #3b4953;
+		border: 5px solid var(--color-dark-accent);
 	}
 
 	.light {
@@ -82,11 +82,11 @@
 	}
 
 	.dark {
-		background-color: #90ab8b;
+		background-color: var(--color-dark-square);
 	}
 
 	.check {
-		background-color: #aa2b1d !important;
+		background-color: var(--color-error) !important;
 	}
 
 	.piece {
