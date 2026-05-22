@@ -41,9 +41,9 @@
 	let chatMessages: Message[] = $state([]);
 
 	$effect(() => {
-		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-		ws.connect(`${protocol}//${window.location.host}/api/v1/ws/game`);
-		return () => ws.disconnect();
+		// const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+		// ws.connect(`${protocol}//${window.location.host}/api/v1/ws/game`);
+		// return () => ws.disconnect();
 	});
 
 	$effect(() => {

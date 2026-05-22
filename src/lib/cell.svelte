@@ -27,11 +27,19 @@
 		R: rookW
 	};
 
-	export let color: 'light' | 'dark';
-	export let piece: string = '';
-	export let highlight: boolean = false;
-	export let check: boolean = false;
-	export let onclick: () => void = () => {};
+	let {
+		color,
+		piece = '',
+		highlight = false,
+		check = false,
+		onclick = () => {}
+	}: {
+		color: 'light' | 'dark';
+		piece?: string;
+		highlight?: boolean;
+		check?: boolean;
+		onclick?: () => void;
+	} = $props();
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
