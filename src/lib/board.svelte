@@ -3,6 +3,8 @@
 	import GameOver from './gameover.svelte';
 	import { type InstructorMove, ToWhitePiece, type PieceState } from '$lib/types';
 	import { Chess, type Square } from 'chess.js';
+	import moveSelfSound from '$lib/assets/move-self.mp3';
+	import captureSound from '$lib/assets/capture.mp3';
 
 	let {
 		flip = false,
@@ -93,7 +95,16 @@
 			} else {
 				checkPosition = null;
 			}
+
+			playSound(moveResult.captured ? 'capture' : 'move');
 		}
+	}
+
+	function playSound(type: 'move' | 'capture') {
+		if (typeof window === 'undefined') return;
+
+		const audio = new Audio(type === 'move' ? moveSelfSound : captureSound);
+		audio.play().catch((e) => console.error('Error playing sound:', e));
 	}
 
 	function getPieceFromBoardState(r: number, c: number): string | undefined {
