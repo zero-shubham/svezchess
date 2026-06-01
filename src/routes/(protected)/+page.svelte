@@ -77,14 +77,18 @@
 		ws.send({ type: 'GAME', subtype: 'explain', payload: text });
 	}
 
-	function handleStudentMove(move: { from: { r: number; c: number }; to: { r: number; c: number }; fen: string }) {
-		const lan = rowColToLAN(move.from, move.to);
-		ws.send({ type: 'GAME', subtype: 'move', payload: { move: lan, fen: move.fen } });
+	function handleStudentMove(san: string, fen: string) {
+		ws.send({ type: 'GAME', subtype: 'move', payload: { move: san, fen: fen } });
 	}
 </script>
 
 <div class="container">
-		<Board flip={false} {instructorMove} {handleInvalidInstructorMove} onstudentmove={handleStudentMove} />
+	<Board
+		flip={false}
+		{instructorMove}
+		{handleInvalidInstructorMove}
+		onstudentmove={handleStudentMove}
+	/>
 	<Chat messages={chatMessages} onsend={handleSendMessage} />
 </div>
 

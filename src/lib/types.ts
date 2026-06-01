@@ -16,8 +16,8 @@ export function ToWhitePiece(p: BlackPiece): WhitePiece {
 }
 
 export type InstructorMove = {
-	currentPosition: [number, number];
-	movePosition: [number, number];
+	san: string;
+	fen: string;
 };
 
 export type PieceState = {

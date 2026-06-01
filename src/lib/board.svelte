@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Cell from './cell.svelte';
 	import GameOver from './gameover.svelte';
-	import { type InstructorMove, ToWhitePiece, type PieceState } from '$lib/types';
+	import PawnPromotion from './pawnprom.svelte';
+	import { type InstructorMove, ToWhitePiece, type PieceState, type Piece } from '$lib/types';
 	import { Chess, type Square } from 'chess.js';
 	import moveSelfSound from '$lib/assets/move-self.mp3';
 	import captureSound from '$lib/assets/capture.mp3';
@@ -16,11 +17,7 @@
 		flip?: boolean;
 		instructorMove?: InstructorMove | null;
 		handleInvalidInstructorMove: (reason: string) => void;
-		onstudentmove?: (move: {
-			from: { r: number; c: number };
-			to: { r: number; c: number };
-			fen: string;
-		}) => void;
+		onstudentmove?: (san: string, fen: string) => void;
 		fenState?: string | null;
 	} = $props();
 
@@ -43,6 +40,11 @@
 	let checkPosition = $state<{ r: number; c: number } | null>(null);
 	let winner = $state<'white' | 'black' | 'draw' | null>(null);
 
+	let promotionPending = $state(false);
+	let promotionFrom = $state<Square | null>(null);
+	let promotionSquare = $state<Square | null>(null);
+	let promotionColor = $state<'w' | 'b'>('w');
+
 	function squareToRowCol(sq: string): { r: number; c: number } {
 		return { r: 8 - parseInt(sq[1]), c: sq.charCodeAt(0) - 97 };
 	}
@@ -53,21 +55,15 @@
 		return squareToRowCol(squares[0]);
 	}
 
-	function moveToSquare(san: string): Square {
-		const match = san.match(/[a-h][1-8]/);
-		return (match ? match[0] : san) as Square;
-	}
-
 	function handleClick(r: number, c: number) {
 		const piece = boardState[r][c];
 		const sq = (String.fromCharCode(97 + c) + (8 - r)) as Square;
 
-		
 		if (selected == null) {
 			if (!piece) return;
 			if (chess.turn() !== piece.color) return;
 			selected = piece;
-			highlight = chess.moves({ square: sq }).map(moveToSquare);
+			highlight = chess.moves({ square: sq, verbose: true }).map((m) => m.to);
 			return;
 		}
 
@@ -80,24 +76,61 @@
 		if (selected.color === piece?.color && selected.square !== piece.square && piece) {
 			if (chess.turn() !== piece.color) return;
 			selected = piece;
-			highlight = chess.moves({ square: sq }).map(moveToSquare);
+			highlight = chess.moves({ square: sq, verbose: true }).map((m) => m.to);
 			return;
 		}
 
-		const moveResult = chess.move({ from: selected.square as Square, to: sq });
-		if (moveResult) {
-			boardState = chess.board();
+		if (selected.type === 'p' && (sq[1] === '8' || sq[1] === '1')) {
+			promotionFrom = selected.square as Square;
+			promotionSquare = sq;
+			promotionColor = selected.color;
+			promotionPending = true;
 			selected = null;
 			highlight = [];
-
-			if (chess.isCheck()) {
-				checkPosition = findKing(chess.turn());
-			} else {
-				checkPosition = null;
-			}
-
-			playSound(moveResult.captured ? 'capture' : 'move');
+			return;
 		}
+
+		makeMove(selected.square as Square, sq);
+		selected = null;
+		highlight = [];
+	}
+
+	function handlePromotion(pieceCode: Piece) {
+		if (!promotionFrom || !promotionSquare) return;
+
+		makeMove(promotionFrom, promotionSquare, pieceCode.toLowerCase() as 'q' | 'r' | 'b' | 'n');
+
+		promotionPending = false;
+		promotionFrom = null;
+		promotionSquare = null;
+	}
+
+	function makeMove(from: Square, to: Square, promotion?: 'q' | 'r' | 'b' | 'n') {
+		const moveResult = chess.move({ from, to, promotion });
+		if (!moveResult) return false;
+		boardState = chess.board();
+
+		if(onstudentmove){
+			onstudentmove(moveResult.san, chess.fen({ forceEnpassantSquare: true }));
+		}
+		
+		playSound(moveResult.captured ? 'capture' : 'move');
+
+		if (chess.isCheck()) {
+			checkPosition = findKing(chess.turn());
+		} else {
+			checkPosition = null;
+		}
+
+		if (chess.isGameOver()) {
+			if (chess.isCheckmate()) {
+				winner = chess.turn() === 'w' ? 'black' : 'white';
+			} else {
+				winner = 'draw';
+			}
+		}
+
+		return true;
 	}
 
 	function playSound(type: 'move' | 'capture') {
@@ -117,6 +150,9 @@
 
 <div class="board">
 	<GameOver {winner} />
+	{#if promotionPending}
+		<PawnPromotion color={promotionColor === 'w' ? 'white' : 'black'} onSelect={handlePromotion} />
+	{/if}
 	{#each displayRows as r, ri (ri)}
 		{#each displayCols as c, ci (ci)}
 			{@const sq = (String.fromCharCode(97 + c) + (8 - r)) as Square}
