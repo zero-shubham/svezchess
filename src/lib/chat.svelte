@@ -6,7 +6,8 @@
 		message: string;
 	}
 
-	let { messages = [], onsend }: { messages?: Message[]; onsend?: (text: string) => void } = $props();
+	let { messages = [], onsend }: { messages?: Message[]; onsend?: (text: string) => void } =
+		$props();
 
 	let minimized = $state(false);
 	let newMessage = $state('');

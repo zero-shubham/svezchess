@@ -1,5 +1,7 @@
 <script lang="ts">
-	let { winner = null as 'white' | 'black' | 'draw' | null }: { winner?: 'white' | 'black' | 'draw' | null } = $props();
+	let {
+		winner = null as 'white' | 'black' | 'draw' | null
+	}: { winner?: 'white' | 'black' | 'draw' | null } = $props();
 </script>
 
 <svelte:head>

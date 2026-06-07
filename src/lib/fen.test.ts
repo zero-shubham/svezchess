@@ -61,13 +61,17 @@ describe('loadFEN', () => {
 	});
 
 	it('parses enPassantTarget correctly', () => {
-		const { enPassantTarget } = loadFEN('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1');
+		const { enPassantTarget } = loadFEN(
+			'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1'
+		);
 
 		expect(enPassantTarget).toEqual({ r: 5, c: 4 });
 	});
 
 	it('parses enPassantTarget on queenside', () => {
-		const { enPassantTarget } = loadFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPP1PP/RNBQKBNR w KQkq b6 0 2');
+		const { enPassantTarget } = loadFEN(
+			'rnbqkbnr/pppppppp/8/8/8/8/PPPPP1PP/RNBQKBNR w KQkq b6 0 2'
+		);
 
 		expect(enPassantTarget).toEqual({ r: 2, c: 1 });
 	});
@@ -81,7 +85,7 @@ describe('loadFEN', () => {
 			whiteRookLeft: false,
 			whiteRookRight: false,
 			blackRookLeft: false,
-			blackRookRight: false,
+			blackRookRight: false
 		});
 	});
 
@@ -94,7 +98,7 @@ describe('loadFEN', () => {
 			whiteRookLeft: true,
 			whiteRookRight: true,
 			blackRookLeft: true,
-			blackRookRight: true,
+			blackRookRight: true
 		});
 	});
 

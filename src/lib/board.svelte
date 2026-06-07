@@ -12,12 +12,14 @@
 		instructorMove,
 		handleInvalidInstructorMove,
 		onstudentmove,
+		oncapture,
 		fenState = $bindable<string | null>(null)
 	}: {
 		flip?: boolean;
 		instructorMove?: InstructorMove | null;
 		handleInvalidInstructorMove: (reason: string) => void;
 		onstudentmove?: (san: string, fen: string) => void;
+		oncapture?: (captured: { white?: string; black?: string }) => void;
 		fenState?: string | null;
 	} = $props();
 
@@ -40,6 +42,15 @@
 		}
 		boardState = chess.board();
 		playSound(moveResult.captured ? 'capture' : 'move');
+		if (moveResult.captured && oncapture) {
+			if (moveResult.color === 'w') {
+				oncapture({ white: moveResult.captured });
+			} else {
+				oncapture({
+					black: ToWhitePiece(moveResult.captured as 'r' | 'n' | 'b' | 'q' | 'k' | 'p')
+				});
+			}
+		}
 		if (chess.isCheck()) {
 			checkPosition = findKing(chess.turn());
 		} else {
@@ -54,7 +65,9 @@
 		}
 		const currentFen = chess.fen({ forceEnpassantSquare: true });
 		if (instructorMove.fen && currentFen !== instructorMove.fen) {
-			handleInvalidInstructorMove(`FEN mismatch after move "${instructorMove.san}": expected "${instructorMove.fen}", got "${currentFen}"`);
+			handleInvalidInstructorMove(
+				`FEN mismatch after move "${instructorMove.san}": expected "${instructorMove.fen}", got "${currentFen}"`
+			);
 		}
 	});
 
@@ -137,11 +150,20 @@
 		if (!moveResult) return false;
 		boardState = chess.board();
 
-		if(onstudentmove){
+		if (onstudentmove) {
 			onstudentmove(moveResult.san, chess.fen({ forceEnpassantSquare: true }));
 		}
-		
+
 		playSound(moveResult.captured ? 'capture' : 'move');
+		if (moveResult.captured && oncapture) {
+			if (moveResult.color === 'w') {
+				oncapture({ white: moveResult.captured });
+			} else {
+				oncapture({
+					black: ToWhitePiece(moveResult.captured as 'r' | 'n' | 'b' | 'q' | 'k' | 'p')
+				});
+			}
+		}
 
 		if (chess.isCheck()) {
 			checkPosition = findKing(chess.turn());

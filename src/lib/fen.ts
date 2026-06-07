@@ -44,7 +44,7 @@ export function loadFEN(fen: string): {
 		whiteRookLeft: !castling?.includes('Q'),
 		whiteRookRight: !castling?.includes('K'),
 		blackRookLeft: !castling?.includes('q'),
-		blackRookRight: !castling?.includes('k'),
+		blackRookRight: !castling?.includes('k')
 	};
 
 	return { board: newBoard, enPassantTarget, hasMoved };

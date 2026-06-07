@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Board from '$lib/board.svelte';
+	import Captured from '$lib/captured.svelte';
 	import Chat from '$lib/chat.svelte';
 	import UserMenu from '$lib/usermenu.svelte';
 	import { ws } from '../../lib/ws.svelte.ts';
@@ -12,9 +13,16 @@
 		message: string;
 	}
 
+	type CapturedPayload = { white: string[]; black: string[] };
+
 	let instructorMove: InstructorMove | null = $state(null);
 	let chatMessages: Message[] = $state([]);
 	let fenState: string | null = $state(null);
+	let flip = $state(false);
+	let capturedPieces: CapturedPayload = $state({
+		white: [],
+		black: []
+	});
 
 	$effect(() => {
 		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -30,9 +38,14 @@
 					chatMessages = [...chatMessages, { actor: 'instructor', message: payload.message }];
 				}
 			} else if (msg.subtype === 'start_game') {
-				const payload = msg.payload as { level: number; fen: string } | undefined;
+				const payload = msg.payload as
+					| { level: number; fen: string; white: string; session_id?: string }
+					| undefined;
 				if (payload?.fen) {
 					fenState = payload.fen;
+				}
+				if (payload?.white) {
+					flip = payload.white === 'instructor';
 				}
 			} else if (msg.subtype === 'move') {
 				const payload = msg.payload as { move: string; fen: string; message: string } | undefined;
@@ -42,7 +55,19 @@
 			} else if (msg.subtype === 'move_result') {
 				const payload = msg.payload as { grade: string; delta: number; reason: string } | undefined;
 				if (payload) {
-					chatMessages = [...chatMessages, { actor: 'instructor', message: `Score: ${payload.grade} (${payload.delta >= 0 ? '+' : ''}${payload.delta})` }];
+					chatMessages = [
+						...chatMessages,
+						{
+							actor: 'instructor',
+							message: `Score: ${payload.grade} (${payload.delta >= 0 ? '+' : ''}${payload.delta})`
+						}
+					];
+				}
+			} else if (msg.subtype === 'captured') {
+				const payload = msg.payload as CapturedPayload | undefined;
+
+				if (payload) {
+					capturedPieces = payload;
 				}
 			}
 		}
@@ -62,16 +87,32 @@
 	function handleStudentMove(san: string, fen: string) {
 		ws.send({ type: 'GAME', subtype: 'move', payload: { move: san, fen: fen } });
 	}
+
+	function handleCapture(captured: { white?: string; black?: string }) {
+		if ((flip && captured.white) || (!flip && captured.black)) {
+			return;
+		}
+
+		capturedPieces = {
+			white: captured.white ? [...capturedPieces.white, captured.white] : capturedPieces.white,
+			black: captured.black ? [...capturedPieces.black, captured.black] : capturedPieces.black
+		};
+	}
 </script>
 
 <div class="container">
-	<Board
-		flip={false}
-		{instructorMove}
-		{handleInvalidInstructorMove}
-		onstudentmove={handleStudentMove}
-		bind:fenState
-	/>
+	<div class="board-area">
+		<Captured pieces={!flip ? capturedPieces.black : capturedPieces.white} />
+		<Board
+			{flip}
+			{instructorMove}
+			{handleInvalidInstructorMove}
+			onstudentmove={handleStudentMove}
+			oncapture={handleCapture}
+			bind:fenState
+		/>
+		<Captured pieces={!flip ? capturedPieces.white : capturedPieces.black} />
+	</div>
 	<Chat messages={chatMessages} onsend={handleSendMessage} />
 </div>
 
@@ -82,5 +123,14 @@
 		display: flex;
 		justify-content: center;
 		padding: 20px;
+	}
+
+	.board-area {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		max-width: 600px;
+		width: 100%;
 	}
 </style>

@@ -3,25 +3,25 @@
 
 	const API_BASE = '/api/v1';
 
-		let email = $state('');
-		let password = $state('');
-		let error = $state('');
-		let loading = $state(false);
+	let email = $state('');
+	let password = $state('');
+	let error = $state('');
+	let loading = $state(false);
 
-		async function handleSubmit(e: Event) {
-			e.preventDefault();
-			error = '';
-			loading = true;
+	async function handleSubmit(e: Event) {
+		e.preventDefault();
+		error = '';
+		loading = true;
 
-			const body = { email, password };
+		const body = { email, password };
 
-			try {
-				const res = await fetch(`${API_BASE}/auth/login`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					credentials: 'include',
-					body: JSON.stringify(body)
-				});
+		try {
+			const res = await fetch(`${API_BASE}/auth/login`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body: JSON.stringify(body)
+			});
 
 			const data = await res.json();
 

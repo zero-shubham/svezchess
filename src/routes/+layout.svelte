@@ -19,8 +19,7 @@
 <style>
 	.logo {
 		width: 80px;
-    }
- 
+	}
 
 	.logo img {
 		width: 100%;

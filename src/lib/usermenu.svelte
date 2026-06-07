@@ -33,7 +33,11 @@
 </button>
 
 {#if menuOpen}
-	<div class="backdrop" onclick={closeMenu} onkeydown={(e) => e.key === 'Escape' && closeMenu()}></div>
+	<div
+		class="backdrop"
+		onclick={closeMenu}
+		onkeydown={(e) => e.key === 'Escape' && closeMenu()}
+	></div>
 	<div class="menu">
 		<button class="menu-item" onclick={logout} disabled={loggingOut}>
 			{loggingOut ? 'Logging out...' : 'Logout'}
