@@ -1,38 +1,23 @@
-# sv
+# ezchess
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+SvelteKit frontend for the ezchess AI chess learning app. This is the client UI — the backend is [pyezchess](https://github.com/zero-shubham/pyezchess).
 
-## Creating a project
+> **Status:** Proof of Concept — validating the concept alongside the backend. Not production-ready.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Run the POC locally
 
-```sh
-# create a new project in the current directory
-npx sv create
+Requires the [pyezchess](https://github.com/zero-shubham/pyezchess) backend running on `localhost:8080` (API and WebSocket). Uses **Bun** or **npm**.
 
-# create a new project in my-app
-npx sv create my-app
+```bash
+# Install dependencies
+bun install
+
+# Start dev server (proxies /api to localhost:8080)
+bun dev
 ```
 
-## Developing
+App is now at `http://localhost:5173`. A guest account is auto-created by the backend (`guest@ezchess.app` / `Password!`).
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Stack
 
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+SvelteKit · Svelte 5 · TypeScript · chess.js · Vite
