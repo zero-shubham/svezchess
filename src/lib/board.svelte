@@ -31,6 +31,33 @@
 		boardState = chess.board();
 	});
 
+	$effect(() => {
+		if (!instructorMove?.san) return;
+		const moveResult = chess.move(instructorMove.san);
+		if (!moveResult) {
+			handleInvalidInstructorMove(`chess.js rejected move "${instructorMove.san}"`);
+			return;
+		}
+		boardState = chess.board();
+		playSound(moveResult.captured ? 'capture' : 'move');
+		if (chess.isCheck()) {
+			checkPosition = findKing(chess.turn());
+		} else {
+			checkPosition = null;
+		}
+		if (chess.isGameOver()) {
+			if (chess.isCheckmate()) {
+				winner = chess.turn() === 'w' ? 'black' : 'white';
+			} else {
+				winner = 'draw';
+			}
+		}
+		const currentFen = chess.fen({ forceEnpassantSquare: true });
+		if (instructorMove.fen && currentFen !== instructorMove.fen) {
+			handleInvalidInstructorMove(`FEN mismatch after move "${instructorMove.san}": expected "${instructorMove.fen}", got "${currentFen}"`);
+		}
+	});
+
 	let displayRows = $derived(flip ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7]);
 	let displayCols = [0, 1, 2, 3, 4, 5, 6, 7];
 
