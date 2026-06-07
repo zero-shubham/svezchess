@@ -12,6 +12,30 @@
 	let minimized = $state(false);
 	let newMessage = $state('');
 	let isSmallScreen = $state(false);
+	let chatBox = $state<HTMLDivElement>();
+	let showScrollButton = $state(false);
+	let isFirstRender = true;
+
+	$effect(() => {
+		if (!chatBox || !messages.length) return;
+
+		const distanceFromBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight;
+
+		if (isFirstRender || distanceFromBottom < 100) {
+			chatBox.scrollTop = chatBox.scrollHeight;
+			showScrollButton = false;
+			isFirstRender = false;
+		} else {
+			showScrollButton = true;
+		}
+	});
+
+	function scrollToBottom() {
+		if (chatBox) {
+			chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+			showScrollButton = false;
+		}
+	}
 
 	$effect(() => {
 		const mql = window.matchMedia('(max-width: 800px)');
@@ -52,7 +76,7 @@
 
 	{#if !minimized || !isSmallScreen}
 		<div class="content">
-			<div class="messages">
+			<div class="messages" bind:this={chatBox}>
 				{#if messages.length === 0}
 					<div class="empty-state">Wait for your instructor to begin..</div>
 				{/if}
@@ -65,6 +89,9 @@
 					</div>
 				{/each}
 			</div>
+			{#if showScrollButton}
+				<button class="scroll-btn" onclick={scrollToBottom}> ↓ New messages </button>
+			{/if}
 			<div class="input-area">
 				<input
 					type="text"
@@ -153,6 +180,39 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
+		position: relative;
+	}
+
+	.scroll-btn {
+		position: absolute;
+		bottom: 60px;
+		left: 50%;
+		transform: translateX(-50%);
+		background-color: var(--color-dark-accent);
+		color: white;
+		border: none;
+		border-radius: 20px;
+		padding: 6px 16px;
+		font-size: 0.8rem;
+		cursor: pointer;
+		z-index: 10;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+		animation: fadeInUp 0.2s ease;
+	}
+
+	.scroll-btn:hover {
+		opacity: 0.9;
+	}
+
+	@keyframes fadeInUp {
+		from {
+			opacity: 0;
+			transform: translateX(-50%) translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(-50%) translateY(0);
+		}
 	}
 
 	.empty-state {

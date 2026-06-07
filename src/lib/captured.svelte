@@ -47,15 +47,13 @@
 	);
 </script>
 
-{#if sortedPieces.length > 0}
-	<div class="captured">
-		{#each sortedPieces as piece, i (piece + i)}
-			{#if pieceSvgs[piece]}
-				<img src={pieceSvgs[piece]} alt={piece} class="piece" />
-			{/if}
-		{/each}
-	</div>
-{/if}
+<div class="captured">
+	{#each sortedPieces as piece, i (piece + i)}
+		{#if pieceSvgs[piece]}
+			<img src={pieceSvgs[piece]} alt={piece} class="piece" />
+		{/if}
+	{/each}
+</div>
 
 <style>
 	.captured {
@@ -64,6 +62,7 @@
 		gap: 2px;
 		align-items: center;
 		padding: 4px;
+		min-height: 8px;
 	}
 
 	.piece {
