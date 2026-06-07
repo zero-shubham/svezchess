@@ -6,17 +6,35 @@ SvelteKit frontend for the ezchess AI chess learning app. This is the client UI 
 
 ## Run the POC locally
 
-Requires the [pyezchess](https://github.com/zero-shubham/pyezchess) backend running on `localhost:8080` (API and WebSocket). Uses **Bun** or **npm**.
+Requires Docker. Supports **OpenAI**, **Anthropic (Claude)**, **Gemini**, and **DeepSeek** — at least one LLM API key needed.
 
 ```bash
-# Install dependencies
-bun install
+docker network create ezchess
 
-# Start dev server (proxies /api to localhost:8080)
-bun dev
+docker run -d --network ezchess --name db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=ezchess \
+  postgres:15-alpine
+
+docker run -d --network ezchess --name ezchess -p 3000:3000 \
+  -e DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/ezchess \
+  -e OPENAI_API_KEY=sk-... \
+  zeroshubham/ezchess:latest
 ```
 
-App is now at `http://localhost:5173`. A guest account is auto-created by the backend (`guest@ezchess.app` / `Password!`).
+App is now at `http://localhost:3000`. A guest account is auto-created (`guest@ezchess.app` / `Password!`).
+
+### Run frontend dev server (without Docker)
+
+Requires the backend running on `localhost:8080` (API + WebSocket proxy).
+
+```bash
+bun install    # or npm install
+bun dev        # or npm run dev
+```
+
+App at `http://localhost:5173`.
 
 ## Stack
 
