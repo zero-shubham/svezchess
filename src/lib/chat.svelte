@@ -266,6 +266,9 @@
 
 	p {
 		margin: 0;
+		white-space: pre-wrap;
+		overflow-wrap: break-word;
+		word-break: break-word;
 	}
 
 	.input-area {

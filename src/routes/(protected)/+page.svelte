@@ -81,7 +81,7 @@
 
 	function handleSendMessage(text: string) {
 		chatMessages = [...chatMessages, { actor: 'student', message: text }];
-		ws.send({ type: 'GAME', subtype: 'explain', payload: text });
+		ws.send({ type: 'GAME', subtype: 'query', payload: { query: text, fen: fenState ?? '' } });
 	}
 
 	function handleStudentMove(san: string, fen: string) {
