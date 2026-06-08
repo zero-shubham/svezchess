@@ -2,6 +2,8 @@
 
 SvelteKit frontend for the ezchess AI chess learning app. This is the client UI — the backend is [pyezchess](https://github.com/zero-shubham/pyezchess).
 
+<img width="1913" height="910" alt="ezchess_post" src="https://github.com/user-attachments/assets/f423bd61-f3d9-4f21-ad92-c1b08345f31c" />
+
 > **Status:** Proof of Concept — validating the concept alongside the backend. Not production-ready.
 
 ## Run the POC locally
